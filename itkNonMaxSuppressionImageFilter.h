@@ -13,6 +13,9 @@ namespace itk
  * This implementation is line based, rather than kernels. It is
  * multithreaded.
  * Only checks neighbouring voxels, so don't smooth too much.
+ * Also, doesn't do any thresholding internally, so do this yourself
+ * first.
+
  * \author Richard Beare, Department of Medicine, Monash University,
  * Australia.  <Richard.Beare@monash.edu>
  *
