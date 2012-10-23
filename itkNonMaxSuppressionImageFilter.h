@@ -56,6 +56,10 @@ public:
   itkSetMacro(EdgeValue, OutputPixelType);
   itkGetConstReferenceMacro(EdgeValue, OutputPixelType);
 
+  // pass image values through - overrids edgevalue
+  itkSetMacro(UseImageValue, bool);
+  itkGetConstReferenceMacro(UseImageValue, bool);
+
   // how many directions does it need to be maximal in? 
   // default = dimensions
   itkSetMacro(ReqMax, OutputPixelType);
@@ -103,6 +107,7 @@ private:
   OutputPixelType m_EdgeValue;
   OutputPixelType m_ReqMax;
   int m_CurrentDimension;
+  bool m_UseImageValue;
 };
 
 

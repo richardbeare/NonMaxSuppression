@@ -21,6 +21,7 @@ NonMaxSuppressionImageFilter<TInputImage, TOutputImage>
 
   m_EdgeValue = 1;
   m_ReqMax = ImageDimension;
+  m_UseImageValue = false;
 }
 
 template <typename TInputImage, typename TOutputImage>
@@ -186,38 +187,45 @@ NonMaxSuppressionImageFilter<TInputImage, TOutputImage>
   
   RegionType region = outputRegionForThread;
 
-  InputConstIteratorType  inputIterator(  inputImage,  region );
+  //InputConstIteratorType  inputIterator(  inputImage,  region );
+  InputConstIteratorType  inputIteratorNext(  inputImage,  region );
   OutputIteratorType      outputIterator( outputImage, region );
   OutputConstIteratorType inputIteratorStage2( outputImage, region );
-  inputIterator.SetDirection(m_CurrentDimension);
+  //inputIterator.SetDirection(m_CurrentDimension);
+  inputIteratorNext.SetDirection(m_CurrentDimension);
   outputIterator.SetDirection(m_CurrentDimension);
-  inputIterator.GoToBegin();
+  //inputIterator.GoToBegin();
+  inputIteratorNext.GoToBegin();
   outputIterator.GoToBegin();
 
 
   if ( m_CurrentDimension != (InputImageDimension - 1) )
     {
-    while( !inputIterator.IsAtEnd() && !outputIterator.IsAtEnd() )
+    while( !inputIteratorNext.IsAtEnd() && !outputIterator.IsAtEnd() )
       {
       PixelType prev, centre, next;
       prev = itk::NumericTraits<PixelType>::max();
       next = itk::NumericTraits<PixelType>::max();
       centre = itk::NumericTraits<PixelType>::max();
-      for (; !inputIterator.IsAtEndOfLine(); ++inputIterator, ++outputIterator )
+      ++inputIteratorNext;
+      for (; !inputIteratorNext.IsAtEndOfLine(); ++inputIteratorNext, ++outputIterator )
 	{
-	next = inputIterator.Get();
+	next = inputIteratorNext.Get();
 	if ((centre > prev) && (centre > next))
 	  {
 	  outputIterator.Set(outputIterator.Get() + 1);
 	  }
 	prev=centre;
 	centre=next;
-      
 	}
 
       // now onto the next line
-      inputIterator.NextLine();
+      // inputIterator.NextLine();
+      inputIteratorNext.NextLine();
       outputIterator.NextLine();
+      inputIteratorNext.GoToBeginOfLine();
+      outputIterator.GoToBeginOfLine();
+
       progress->CompletedPixel();
       }
     }
@@ -225,36 +233,78 @@ NonMaxSuppressionImageFilter<TInputImage, TOutputImage>
     {
     // special case for the last dimension, as we need to set the output
     // to the specified value
-    while( !inputIterator.IsAtEnd() && !outputIterator.IsAtEnd() )
+    if (m_UseImageValue)
       {
-      PixelType prev, centre, next;
-      prev = itk::NumericTraits<PixelType>::max();
-      next = itk::NumericTraits<PixelType>::max();
-      centre = itk::NumericTraits<PixelType>::max();
-      for (; !inputIterator.IsAtEndOfLine(); ++inputIterator, ++outputIterator )
+      while( !inputIteratorNext.IsAtEnd() && !outputIterator.IsAtEnd() )
 	{
-	next = inputIterator.Get();
-	if ((centre > prev) && (centre > next))
+	PixelType prev, centre, next;
+	prev = itk::NumericTraits<PixelType>::max();
+	next = itk::NumericTraits<PixelType>::max();
+	centre = itk::NumericTraits<PixelType>::max();
+	++inputIteratorNext;
+	for (; !inputIteratorNext.IsAtEndOfLine(); ++inputIteratorNext, ++outputIterator )
 	  {
-	  OutputPixelType val = outputIterator.Get() + 1;
-	  if (val >= m_ReqMax)
+	  next = inputIteratorNext.Get();
+	  if ((centre > prev) && (centre > next))
 	    {
-	    outputIterator.Set(m_EdgeValue);
+	    OutputPixelType val = outputIterator.Get() + 1;
+	    if (val >= m_ReqMax)
+	      {
+	      outputIterator.Set(centre);
+	      }
+	    else 
+	      {
+	      outputIterator.Set(0);
+	      }
 	    }
-	  else 
-	    {
-	    outputIterator.Set(0);
-	    }
+	  prev=centre;
+	  centre=next;
 	  }
-	prev=centre;
-	centre=next;
-      
-	}
 
-      // now onto the next line
-      inputIterator.NextLine();
-      outputIterator.NextLine();
-      progress->CompletedPixel();
+	// now onto the next line
+	//inputIterator.NextLine();
+	inputIteratorNext.NextLine();
+	outputIterator.NextLine();
+	inputIteratorNext.GoToBeginOfLine();
+	outputIterator.GoToBeginOfLine();
+	progress->CompletedPixel();
+	}
+      }
+    else
+      {
+      while( !inputIteratorNext.IsAtEnd() && !outputIterator.IsAtEnd() )
+	{
+	PixelType prev, centre, next;
+	prev = itk::NumericTraits<PixelType>::max();
+	next = itk::NumericTraits<PixelType>::max();
+	centre = itk::NumericTraits<PixelType>::max();
+	++inputIteratorNext;
+	for (; !inputIteratorNext.IsAtEndOfLine(); ++inputIteratorNext, ++outputIterator )
+	  {
+	  next = inputIteratorNext.Get();
+	  if ((centre > prev) && (centre > next))
+	    {
+	    OutputPixelType val = outputIterator.Get() + 1;
+	    if (val >= m_ReqMax)
+	      {
+	      outputIterator.Set(m_EdgeValue);
+	      }
+	    else 
+	      {
+	      outputIterator.Set(0);
+	      }
+	    }
+	  prev=centre;
+	  centre=next;
+	  }
+
+	// now onto the next line
+	inputIteratorNext.NextLine();
+	outputIterator.NextLine();
+	inputIteratorNext.GoToBeginOfLine();
+	outputIterator.GoToBeginOfLine();
+	progress->CompletedPixel();
+	}
       }
 
     }
